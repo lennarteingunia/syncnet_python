@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "syncnet-python"
+version = "0.1.0"
+description = ""
+authors = [
+    "Lennart Eing <lennart.eing@uni-a.de>",
+]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.11,<3.15"
+torch = "^2.9.1"
+torchvision = "^0.24.1"
+scipy = "^1.17.0"
+scenedetect = "^0.6.7.1"
+opencv-python = "^4.12.0.88"
+python-speech-features = "^0.6"
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
