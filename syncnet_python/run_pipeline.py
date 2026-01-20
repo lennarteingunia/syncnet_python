@@ -213,7 +213,13 @@ def crop_video(opt, track, cropfile):
 # ========== ========== ========== ==========
 
 
-def inference_video(opt):
+def inference_video(
+    frames_dir: os.PathLike,
+    reference: os.PathLike,
+    facedet_scale: float,
+    avi_dir: os.PathLike,
+    work_dir: os.PathLike,
+):
 
     DET = S3FD(device='cuda')
 
@@ -287,9 +293,16 @@ def scene_detect(opt):
     return scene_list
 
 
-def main():
-
-    args = get_argument_parser()
+def run_pipeline(
+    work_dir: os.PathLike,
+    reference: os.PathLike,
+    crop_dir: os.PathLike,
+    avi_dir: os.PathLike,
+    frames_dir: os.PathLike,
+    tmp_dir: os.PathLike,
+    videofile: os.PathLike,
+    min_track: int = 100,
+) -> None:
 
     # ========== ========== ========== ==========
     # # EXECUTE DEMO
@@ -297,41 +310,44 @@ def main():
 
     # ========== DELETE EXISTING DIRECTORIES ==========
 
-    if os.path.exists(os.path.join(args.work_dir, args.reference)):
-        rmtree(os.path.join(args.work_dir, args.reference))
+    if os.path.exists(os.path.join(
+        work_dir,
+        reference
+    )):
+        rmtree(os.path.join(work_dir, reference))
 
-    if os.path.exists(os.path.join(args.crop_dir, args.reference)):
-        rmtree(os.path.join(args.crop_dir, args.reference))
+    if os.path.exists(os.path.join(crop_dir, reference)):
+        rmtree(os.path.join(crop_dir, reference))
 
-    if os.path.exists(os.path.join(args.avi_dir, args.reference)):
-        rmtree(os.path.join(args.avi_dir, args.reference))
+    if os.path.exists(os.path.join(avi_dir, reference)):
+        rmtree(os.path.join(avi_dir, reference))
 
-    if os.path.exists(os.path.join(args.frames_dir, args.reference)):
-        rmtree(os.path.join(args.frames_dir, args.reference))
+    if os.path.exists(os.path.join(frames_dir, reference)):
+        rmtree(os.path.join(frames_dir, reference))
 
-    if os.path.exists(os.path.join(args.tmp_dir, args.reference)):
-        rmtree(os.path.join(args.tmp_dir, args.reference))
+    if os.path.exists(os.path.join(tmp_dir, reference)):
+        rmtree(os.path.join(tmp_dir, reference))
 
     # ========== MAKE NEW DIRECTORIES ==========
 
-    os.makedirs(os.path.join(args.work_dir, args.reference))
-    os.makedirs(os.path.join(args.crop_dir, args.reference))
-    os.makedirs(os.path.join(args.avi_dir, args.reference))
-    os.makedirs(os.path.join(args.frames_dir, args.reference))
-    os.makedirs(os.path.join(args.tmp_dir, args.reference))
+    os.makedirs(os.path.join(work_dir, reference))
+    os.makedirs(os.path.join(crop_dir, reference))
+    os.makedirs(os.path.join(avi_dir, reference))
+    os.makedirs(os.path.join(frames_dir, reference))
+    os.makedirs(os.path.join(tmp_dir, reference))
 
     # ========== CONVERT VIDEO AND EXTRACT FRAMES ==========
 
     command = ("ffmpeg -y -i %s -qscale:v 2 -async 1 -r 25 %s" %
-               (args.videofile, os.path.join(args.avi_dir, args.reference, 'video.avi')))
+               (videofile, os.path.join(avi_dir, reference, 'video.avi')))
     output = subprocess.call(command, shell=True, stdout=None)
 
-    command = ("ffmpeg -y -i %s -qscale:v 2 -threads 1 -f image2 %s" % (os.path.join(args.avi_dir,
-                                                                                     args.reference, 'video.avi'), os.path.join(args.frames_dir, args.reference, '%06d.jpg')))
+    command = ("ffmpeg -y -i %s -qscale:v 2 -threads 1 -f image2 %s" % (os.path.join(avi_dir,
+                                                                                     reference, 'video.avi'), os.path.join(frames_dir, reference, '%06d.jpg')))
     output = subprocess.call(command, shell=True, stdout=None)
 
-    command = ("ffmpeg -y -i %s -ac 1 -vn -acodec pcm_s16le -ar 16000 %s" % (os.path.join(args.avi_dir,
-                                                                                          args.reference, 'video.avi'), os.path.join(args.avi_dir, args.reference, 'audio.wav')))
+    command = ("ffmpeg -y -i %s -ac 1 -vn -acodec pcm_s16le -ar 16000 %s" % (os.path.join(avi_dir,
+                                                                                          reference, 'video.avi'), os.path.join(avi_dir, reference, 'audio.wav')))
     output = subprocess.call(command, shell=True, stdout=None)
 
     # ========== FACE DETECTION ==========
@@ -367,3 +383,18 @@ def main():
         pickle.dump(vidtracks, fil)
 
     rmtree(os.path.join(args.tmp_dir, args.reference))
+
+
+def main():
+
+    args = get_argument_parser()
+
+    run_pipeline(
+        args.work_dir,
+        args.reference,
+        args.crop_dir,
+        args.avi_dir,
+        args.frames_dir,
+        args.tmp_dir,
+        args.min_track,
+    )
